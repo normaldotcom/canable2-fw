@@ -7,6 +7,7 @@
 #include "usbd_cdc_if.h"
 #include "can.h"
 #include "led.h"
+#include "error.h"
 
 
 // Private variables
@@ -14,7 +15,8 @@ static FDCAN_HandleTypeDef can_handle;
 static FDCAN_FilterTypeDef filter;
 static uint32_t prescaler;
 enum can_bus_state bus_state;
-static uint8_t can_nart = DISABLE;
+static uint8_t can_autoretransmit = ENABLE;
+static can_txbuf_t txqueue = {0};
 
 
 // Initialize CAN peripheral settings, but don't actually start the peripheral
@@ -83,7 +85,7 @@ void can_enable(void)
 
     	//can_handle.Init.Prescaler = prescaler;
     	can_handle.Init.Mode = FDCAN_MODE_NORMAL;
-    	can_handle.Init.AutoRetransmission = can_nart;
+    	can_handle.Init.AutoRetransmission = can_autoretransmit;
         can_handle.Init.TransmitPause = DISABLE; // emz
         can_handle.Init.ProtocolException = DISABLE; // emz
 
@@ -213,21 +215,13 @@ void can_set_autoretransmit(uint8_t autoretransmit)
     }
     if (autoretransmit)
     {
-        can_nart = DISABLE;
+    	can_autoretransmit = ENABLE;
     } else {
-        can_nart = ENABLE;
+    	can_autoretransmit = DISABLE;
     }
 
     led_green_on();
 }
-
-
-#define TXQUEUE_LEN 64
-#define TXQUEUE_DATALEN 8
-static uint8_t txqueue_data[TXQUEUE_LEN][TXQUEUE_DATALEN];
-static FDCAN_TxHeaderTypeDef txqueue_header[TXQUEUE_LEN];
-static uint8_t txqueue_head = 0;
-static uint8_t txqueue_tail = 0;
 
 
 
@@ -236,42 +230,46 @@ uint32_t can_tx(FDCAN_TxHeaderTypeDef *tx_msg_header, uint8_t* tx_msg_data)
 {
 	// If when we increment the head we're going to hit the tail
 	// (if we're filling the last spot in the queue)
-	if( ((txqueue_head + 1) % TXQUEUE_LEN) == txqueue_tail)
+	if( ((txqueue.head + 1) % TXQUEUE_LEN) == txqueue.tail)
 	{
+
 		for(uint8_t i=0; i<8; i++)
 		{
 			HAL_GPIO_TogglePin(LED_GREEN);
 			HAL_GPIO_TogglePin(LED_BLUE);
 			HAL_Delay(1000);
 		}
-		return;
+
+		error_assert(ERR_FULLBUF_CANTX);
+		return HAL_ERROR;
 	}
 
 	// Convert length to bytes
 	uint32_t len = tx_msg_header->DataLength >> 16;
 
-	txqueue_header[txqueue_head] = *tx_msg_header; // copy value
+	txqueue.header[txqueue.head] = *tx_msg_header; // copy value
 	for(uint8_t i=0; i<len; i++)
 	{
-		txqueue_data[txqueue_head][i] = tx_msg_data[i];
+		txqueue.data[txqueue.head][i] = tx_msg_data[i];
 	}
-	txqueue_head = (txqueue_head + 1) % TXQUEUE_LEN;
+	txqueue.head = (txqueue.head + 1) % TXQUEUE_LEN;
 
-	return HAL_OK; // EMZ FIXME
+	return HAL_OK;
 }
+
 
 void can_process(void)
 {
-	while((txqueue_tail != txqueue_head) && (HAL_FDCAN_GetTxFifoFreeLevel(&can_handle) > 0))
+	while((txqueue.tail != txqueue.head) && (HAL_FDCAN_GetTxFifoFreeLevel(&can_handle) > 0))
 	{
 		uint32_t status;
 
 		// Transmit can frame
-		status = HAL_FDCAN_AddMessageToTxFifoQ(&can_handle, &txqueue_header[txqueue_tail], txqueue_data[txqueue_tail]);
-		txqueue_tail = (txqueue_tail + 1) % TXQUEUE_LEN;
+		status = HAL_FDCAN_AddMessageToTxFifoQ(&can_handle, &txqueue.header[txqueue.tail], txqueue.data[txqueue.tail]);
+		txqueue.tail = (txqueue.tail + 1) % TXQUEUE_LEN;
 
-		// Could also jsut not increment tail if it fails, only if it succeeds.
-
+		// This drops the packet if it fails (no retry). Failure is unlikely
+		// since we check if there is a TX mailbox free.
 		if(status != HAL_OK)
 		{
 			for(uint8_t i=0; i<8; i++)
@@ -280,11 +278,11 @@ void can_process(void)
 				HAL_GPIO_TogglePin(LED_BLUE);
 				HAL_Delay(1000);
 			}
+			error_assert(ERR_CAN_TXFAIL);
 		}
 
 		led_green_on();
 	}
-//    return status;
 }
 
 

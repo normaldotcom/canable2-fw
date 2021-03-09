@@ -21,6 +21,20 @@ enum can_bus_state {
     ON_BUS
 };
 
+// CAN transmit buffering
+#define TXQUEUE_LEN 64 // Number of buffers allocated
+#define TXQUEUE_DATALEN 8 // CAN DLC length of data buffers
+
+typedef struct cantxbuf_
+{
+	uint8_t data[TXQUEUE_LEN][TXQUEUE_DATALEN]; // Data buffer
+	FDCAN_TxHeaderTypeDef header[TXQUEUE_LEN]; // Header buffer
+	uint8_t head; // Head pointer
+	uint8_t tail; // Tail pointer
+	uint8_t full; // TODO: Set this when we are full, clear when the tail moves one.
+} can_txbuf_t;
+
+
 void can_init(void);
 void can_enable(void);
 void can_disable(void);

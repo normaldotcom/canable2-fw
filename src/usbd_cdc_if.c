@@ -1,13 +1,10 @@
 #include "usbd_cdc_if.h"
 #include "slcan.h"
+#include "error.h"
 
-// This takes 4k of RAM.
-#define NUM_RX_BUFS 8
-#define RX_BUF_SIZE 512 // I think this must be 512k to match usbd_conf.c's LL RX
-static volatile uint8_t rxbuf[NUM_RX_BUFS][RX_BUF_SIZE];
-static volatile uint32_t rxbuf_msglen[NUM_RX_BUFS];
-static volatile uint8_t rxbuf_head = 0;
-static volatile uint8_t rxbuf_tail = 0;
+// Private variables
+static volatile usbrx_buf_t rxbuf = {0};
+
 
 // TXBuf pingpong
 #define NUM_TX_BUFS 2
@@ -46,7 +43,7 @@ static int8_t CDC_Init_FS(void)
   /* USER CODE BEGIN 3 */
   /* Set Application Buffers */
   USBD_CDC_SetTxBuffer(&hUsbDeviceFS, txbuf[txbuf_selected], 0);
-  USBD_CDC_SetRxBuffer(&hUsbDeviceFS, rxbuf[rxbuf_head]);
+  USBD_CDC_SetRxBuffer(&hUsbDeviceFS, rxbuf.buf[rxbuf.head]);
   return (USBD_OK);
   /* USER CODE END 3 */
 }
@@ -159,22 +156,31 @@ static int8_t CDC_Control_FS(uint8_t cmd, uint8_t* pbuf, uint16_t length)
 
 static int8_t CDC_Receive_FS(uint8_t* Buf, uint32_t *Len)
 {
-	// TODO: Put bytes in circular buffer that is processed
-	// in the main loop. Ensure that frames are processed
-	// in-order.
+	// Check for overflow!
+	// If when we increment the head we're going to hit the tail
+	// (if we're filling the last spot in the queue)
+	// FIXME: Use a "full" variable instead of wasting one
+	// spot in the cirbuf as we are doing now
+	if( ((rxbuf.head + 1) % NUM_RX_BUFS) == rxbuf.tail)
+	{
+		error_assert(ERR_FULLBUF_USBRX);
 
-	// TODO: Maybe just setrxbuffer to a different buf. Pingpong or
-	// just use that as the queue. need to respect that this is an ISR,
-	// use head/tail pointer.
+		// Listen again on the same buffer. Old data will be overwritten.
+	    USBD_CDC_SetRxBuffer(&hUsbDeviceFS, rxbuf.buf[rxbuf.head]);
+	    USBD_CDC_ReceivePacket(&hUsbDeviceFS);
+		return HAL_ERROR;
+	}
+	else
+	{
+		// Save off length
+		rxbuf.msglen[rxbuf.head] = *Len;
+		rxbuf.head = (rxbuf.head + 1) % NUM_RX_BUFS;
 
-	// Save off length
-	rxbuf_msglen[rxbuf_head] = *Len;
-	rxbuf_head = (rxbuf_head + 1) % NUM_RX_BUFS;
-
-	// Start listening on next buffer. Previous buffer will be processed in main loop.
-    USBD_CDC_SetRxBuffer(&hUsbDeviceFS, rxbuf[rxbuf_head]);
-    USBD_CDC_ReceivePacket(&hUsbDeviceFS);
-
+		// Start listening on next buffer. Previous buffer will be processed in main loop.
+	    USBD_CDC_SetRxBuffer(&hUsbDeviceFS, rxbuf.buf[rxbuf.head]);
+	    USBD_CDC_ReceivePacket(&hUsbDeviceFS);
+	    return (USBD_OK);
+	}
 }
 
 
@@ -184,14 +190,12 @@ uint8_t slcan_str_index = 0;
 
 void cdc_process(void)
 {
-	// TODO: Check for buffer overflow
-
-	if(rxbuf_tail != rxbuf_head)
+	if(rxbuf.tail != rxbuf.head)
 	{
 		//  Process one whole buffer
-		for (uint32_t i = 0; i < rxbuf_msglen[rxbuf_tail]; i++)
+		for (uint32_t i = 0; i < rxbuf.msglen[rxbuf.tail]; i++)
 		{
-		   if (rxbuf[rxbuf_tail][i] == '\r')
+		   if (rxbuf.buf[rxbuf.tail][i] == '\r')
 		   {
 			   int8_t result = slcan_parse_str(slcan_str, slcan_str_index);
 
@@ -206,12 +210,19 @@ void cdc_process(void)
 		   }
 		   else
 		   {
-			   slcan_str[slcan_str_index++] = rxbuf[rxbuf_tail][i];
+			   // Check for overflow of buffer
+			   if(slcan_str_index >= SLCAN_MTU)
+			   {
+				   // TODO: Return here and discard this CDC buffer?
+				   slcan_str_index = 0;
+			   }
+
+			   slcan_str[slcan_str_index++] = rxbuf.buf[rxbuf.tail][i];
 		   }
 		}
 
 		// Move on to next buffer
-		rxbuf_tail = (rxbuf_tail + 1) % NUM_RX_BUFS;
+		rxbuf.tail = (rxbuf.tail + 1) % NUM_RX_BUFS;
 	}
 }
 
