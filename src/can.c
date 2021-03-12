@@ -128,13 +128,11 @@ void can_disable(void)
 {
     if (bus_state == ON_BUS)
     {
-        /*
-        // Do a bxCAN reset (set RESET bit to 1)
-    	can_handle.Instance->MCR |= CAN_MCR_RESET;
+        HAL_FDCAN_Stop(&can_handle);
+
         bus_state = OFF_BUS;
 
         led_green_on();
-        */
     }
 }
 

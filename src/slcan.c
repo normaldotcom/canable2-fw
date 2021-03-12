@@ -9,6 +9,10 @@
 #include "usbd_cdc_if.h"
 
 
+// Private variables
+char* fw_id = GIT_VERSION " " GIT_REMOTE "\r";
+
+
 // Private methods
 static int8_t __hal_dlc_code_to_bytes(uint32_t dlc_code);
 static uint32_t __std_dlc_code_to_hal_dlc_code(uint8_t dlc_code);
@@ -198,7 +202,6 @@ int8_t slcan_parse_str(uint8_t *buf, uint8_t len)
 		case 'V':
 		{
 	        // Report firmware version and remote
-	        char* fw_id = GIT_VERSION " " GIT_REMOTE "\r";
 	        CDC_Transmit_FS((uint8_t*)fw_id, strlen(fw_id));
 	        return 0;
 		}
