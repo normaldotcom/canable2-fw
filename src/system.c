@@ -5,12 +5,14 @@
 #include "stm32g4xx_hal.h"
 #include "system.h"
 
+// Private functions
+static void __option_byte_config(void);
+
 
 // Initialize system clocks
 void system_init(void)
 {
     HAL_Init();
-
 
     RCC_OscInitTypeDef RCC_OscInitStruct = {0};
     RCC_ClkInitTypeDef RCC_ClkInitStruct = {0};
@@ -101,6 +103,51 @@ void system_init(void)
     __HAL_RCC_GPIOB_CLK_ENABLE();
     __HAL_RCC_GPIOC_CLK_ENABLE();
     __HAL_RCC_GPIOG_CLK_ENABLE(); // just nrst is on portG
+
+    __option_byte_config();
+}
+
+
+// Configure option bytes: set BoR level to 4 (2.8v)
+static void __option_byte_config(void)
+{
+	// Set BoR level to 4
+	// This eliminates an issue where poor quality USB hubs
+	// that provide low voltage before switching the 5v supply on
+	// which was causing PoR issues where the microcontroller
+	// would enter boot mode incorrectly.
+
+	// Get option bytes
+	volatile FLASH_OBProgramInitTypeDef config = {0};
+	HAL_FLASHEx_OBGetConfig(&config);
+
+	// If BoR is already at level 4, then don't bother doing anything
+	if((config.USERConfig & FLASH_OPTR_BOR_LEV_Msk) == OB_BOR_LEVEL_4)
+		return;
+
+	// Unlock flash
+	if(HAL_FLASH_Unlock() != HAL_OK)
+		return;
+
+	// Unlock option bytes
+   if(HAL_FLASH_OB_Unlock() != HAL_OK)
+	   return;
+
+   FLASH_OBProgramInitTypeDef progval = {0};
+
+   // Update the user option byte
+   progval.OptionType = OPTIONBYTE_USER;
+   progval.USERType = OB_USER_BOR_LEV;
+   progval.USERConfig = OB_BOR_LEVEL_4; // 2.8v for level 4
+
+   // Program the option bytes
+   HAL_FLASHEx_OBProgram(&progval);
+
+   // Lock flash / option bytes
+   HAL_FLASH_OB_Lock();
+   HAL_FLASH_Lock();
+
+   // Note: option byte update will take effect on the next power cycle
 }
 
 
