@@ -42,13 +42,10 @@ int main(void)
 			{
 				uint16_t msg_len = slcan_parse_frame((uint8_t *)&msg_buf, &rx_msg_header, rx_msg_data);
 
-				// TODO: Add to transmit queue. If USB is busy, don't TX now,
-				// wait and TX later.
-
 				// Transmit message via USB-CDC
 				if(msg_len>0)
 				{
-					CDC_Transmit_FS(msg_buf, msg_len);
+					cdc_transmit(msg_buf, msg_len);
 				}
 			}
         }

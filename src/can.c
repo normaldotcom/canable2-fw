@@ -245,17 +245,23 @@ uint32_t can_tx(FDCAN_TxHeaderTypeDef *tx_msg_header, uint8_t* tx_msg_data)
 	// Convert length to bytes
 	uint32_t len = tx_msg_header->DataLength >> 16;
 
-	txqueue.header[txqueue.head] = *tx_msg_header; // copy value
+	// Save the header to the circular buffer
+	txqueue.header[txqueue.head] = *tx_msg_header;
+
+	// Copy the data to the circular buffer
 	for(uint8_t i=0; i<len; i++)
 	{
 		txqueue.data[txqueue.head][i] = tx_msg_data[i];
 	}
+
+	// Increment the head pointer
 	txqueue.head = (txqueue.head + 1) % TXQUEUE_LEN;
 
 	return HAL_OK;
 }
 
 
+// Process data from CAN tx/rx circular buffers
 void can_process(void)
 {
 	while((txqueue.tail != txqueue.head) && (HAL_FDCAN_GetTxFifoFreeLevel(&can_handle) > 0))

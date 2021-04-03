@@ -4,7 +4,7 @@
 
 #include "stm32g4xx_hal.h"
 #include "led.h"
-
+#include "error.h"
 
 // Private variables
 static volatile uint32_t led_blue_laston = 0;
@@ -86,25 +86,41 @@ void led_blue_on(void)
 	}
 }
 
+uint32_t last_errflash = 0;
 
 // Process time-based LED events
 void led_process(void)
 {
-	// If LED has been on for long enough, turn it off
-	if(led_blue_laston > 0 && HAL_GetTick() - led_blue_laston > LED_DURATION)
-	{
-		HAL_GPIO_WritePin(LED_BLUE, 0);
-		led_blue_laston = 0;
-		led_blue_lastoff = HAL_GetTick();
-	}
 
-	// If LED has been on for long enough, turn it off
-	if(led_green_laston > 0 && HAL_GetTick() - led_green_laston > LED_DURATION)
-	{
-        // Invert LED
-		HAL_GPIO_WritePin(LED_GREEN, 1);
-		led_green_laston = 0;
-		led_green_lastoff = HAL_GetTick();
-	}
+    if(error_reg() > 0)
+    {
+    	if(HAL_GetTick() - last_errflash > 250)
+    	{
+    		last_errflash = HAL_GetTick();
+			HAL_GPIO_TogglePin(LED_BLUE);
+			HAL_GPIO_TogglePin(LED_GREEN);
+    	}
+    }
+    else
+    {
+
+
+		// If LED has been on for long enough, turn it off
+		if(led_blue_laston > 0 && HAL_GetTick() - led_blue_laston > LED_DURATION)
+		{
+			HAL_GPIO_WritePin(LED_BLUE, 0);
+			led_blue_laston = 0;
+			led_blue_lastoff = HAL_GetTick();
+		}
+
+		// If LED has been on for long enough, turn it off
+		if(led_green_laston > 0 && HAL_GetTick() - led_green_laston > LED_DURATION)
+		{
+			// Invert LED
+			HAL_GPIO_WritePin(LED_GREEN, 1);
+			led_green_laston = 0;
+			led_green_lastoff = HAL_GetTick();
+		}
+    }
 }
 

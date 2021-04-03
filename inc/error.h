@@ -10,6 +10,7 @@ typedef enum _error_t
 	ERR_CANRXFIFO_OVERFLOW,
 	ERR_FULLBUF_CANTX,
 	ERR_FULLBUF_USBRX,
+	ERR_FULLBUF_USBTX,
 
 	ERR_MAX
 } error_t;
@@ -17,6 +18,9 @@ typedef enum _error_t
 
 // Prototypes
 void error_assert(error_t err);
+uint32_t error_timestamp(error_t err);
+uint8_t error_occurred(error_t err);
+uint32_t error_reg(void);
 
 
 #endif /* INC_ERROR_H_ */

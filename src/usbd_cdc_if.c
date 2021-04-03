@@ -4,14 +4,8 @@
 
 // Private variables
 static volatile usbrx_buf_t rxbuf = {0};
-
-
-// TXBuf pingpong
-#define NUM_TX_BUFS 2
-#define TX_BUF_SIZE  256
-static uint8_t txbuf[NUM_TX_BUFS][TX_BUF_SIZE];
-static uint8_t txbuf_selected = 0;
-
+static volatile usbtx_buf_t txbuf = {0};
+static uint8_t tx_linbuf[TX_BUF_SIZE] = {0};
 
 // Externs
 extern USBD_HandleTypeDef hUsbDeviceFS;
@@ -40,9 +34,14 @@ USBD_CDC_ItfTypeDef USBD_Interface_fops_FS =
   */
 static int8_t CDC_Init_FS(void)
 {
+	rxbuf.head = 0;
+	rxbuf.tail = 0;
+	txbuf.head = 0;
+	txbuf.tail = 0;
+
   /* USER CODE BEGIN 3 */
   /* Set Application Buffers */
-  USBD_CDC_SetTxBuffer(&hUsbDeviceFS, txbuf[txbuf_selected], 0);
+  USBD_CDC_SetTxBuffer(&hUsbDeviceFS, tx_linbuf, 0);
   USBD_CDC_SetRxBuffer(&hUsbDeviceFS, rxbuf.buf[rxbuf.head]);
   return (USBD_OK);
   /* USER CODE END 3 */
@@ -190,6 +189,31 @@ uint8_t slcan_str_index = 0;
 
 void cdc_process(void)
 {
+
+	// Process transmit buffer
+    USBD_CDC_HandleTypeDef *hcdc = (USBD_CDC_HandleTypeDef*)hUsbDeviceFS.pClassData;
+    if(txbuf.tail != txbuf.head && hcdc->TxState == 0)
+    {
+    	// TODO: Just start TX of the actual data and increment the pointer when the TX is complete
+
+    	// Copy data from cirbuf position to the linear tx buf
+    	for(uint32_t i = 0; i < txbuf.msglen[txbuf.tail]; i++)
+		{
+    		tx_linbuf[i] = txbuf.buf[txbuf.tail][i];
+		}
+
+
+        // Set transmit buffer and start TX
+        USBD_CDC_SetTxBuffer(&hUsbDeviceFS, tx_linbuf, txbuf.msglen[txbuf.tail]);
+        USBD_CDC_TransmitPacket(&hUsbDeviceFS);
+
+		// Move on to next buffer
+		txbuf.tail = (txbuf.tail + 1) % NUM_TX_BUFS;
+
+    }
+
+
+	// Process receive buffer
 	if(rxbuf.tail != rxbuf.head)
 	{
 		//  Process one whole buffer
@@ -226,52 +250,35 @@ void cdc_process(void)
 	}
 }
 
-/**
-  * @brief  CDC_Transmit_FS
-  *         Data to send over USB IN endpoint are sent over CDC interface
-  *         through this function.
-  *         @note
-  *
-  *
-  * @param  Buf: Buffer of data to be sent
-  * @param  Len: Number of data to be sent (in bytes)
-  * @retval USBD_OK if all operations are OK else USBD_FAIL or USBD_BUSY
-  */
-uint8_t CDC_Transmit_FS(uint8_t* Buf, uint16_t Len)
+
+// Enqueue data for transmission over USB CDC to host
+void cdc_transmit(uint8_t* buf, uint16_t len)
 {
-    uint8_t result = USBD_OK;
-
-    // NEW: Check if port is busy
-//    USBD_CDC_HandleTypeDef *hcdc = (USBD_CDC_HandleTypeDef*)hUsbDeviceFS.pClassData;
-//    if (hcdc->TxState != 0){
-//      return USBD_BUSY;
-//    }
-    
-    if(Len > TX_BUF_SIZE)
+    if(len > TX_BUF_SIZE)
     {
-    	return 0;
+    	return;
     }
 
-    // Copy data into buffer
-    for (uint32_t i=0; i < Len; i++)
-    {
-    	txbuf[txbuf_selected][i] = Buf[i];
-    }
+	if( ((txbuf.head + 1) % NUM_TX_BUFS) == txbuf.tail)
+	{
+		error_assert(ERR_FULLBUF_USBTX);
+		return;
+	}
+	else
+	{
+		// Save message length
+		txbuf.msglen[txbuf.head] = len;
 
-    // Set transmit buffer and start TX
-    USBD_CDC_SetTxBuffer(&hUsbDeviceFS, txbuf[txbuf_selected], Len);
-    result = USBD_CDC_TransmitPacket(&hUsbDeviceFS);
+		// Copy data
+	    for (uint32_t i=0; i < len; i++)
+	    {
+	    	txbuf.buf[txbuf.head][i] = buf[i];
+	    }
 
-    txbuf_selected = !txbuf_selected;
+	    // Increment the head
+		txbuf.head = (txbuf.head + 1) % NUM_TX_BUFS;
 
-/*
-    for (i = 0; i < 1 + (Len/8); i++) {
-	USBD_CDC_SetTxBuffer(hUsbDeviceFS, UserTxBufferFS + (8*i), 8);
-	do {
-	    result = USBD_CDC_TransmitPacket(hUsbDeviceFS);
-	} while (result != HAL_BUSY);
-    }
-*/
-    /* USER CODE END 8 */
-    return result;
+
+	}
 }
+

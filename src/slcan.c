@@ -202,7 +202,7 @@ int8_t slcan_parse_str(uint8_t *buf, uint8_t len)
 		case 'V':
 		{
 	        // Report firmware version and remote
-	        CDC_Transmit_FS((uint8_t*)fw_id, strlen(fw_id));
+			cdc_transmit((uint8_t*)fw_id, strlen(fw_id));
 	        return 0;
 		}
 
@@ -249,6 +249,10 @@ int8_t slcan_parse_str(uint8_t *buf, uint8_t len)
 			// Transmit CANFD frame
 			break;
 
+		case 'X':
+			// TODO: Firmware update
+			#warning "TODO: Implement firmware update via command"
+			break;
 
 		// Invalid command
 		default:
