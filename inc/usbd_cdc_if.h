@@ -8,8 +8,18 @@
 #define NUM_RX_BUFS 8
 #define RX_BUF_SIZE CDC_DATA_FS_MAX_PACKET_SIZE // Size of RX buffer item
 
-#define NUM_TX_BUFS 8
-#define TX_BUF_SIZE 256
+
+
+// CDC transmit buffering
+#define TX_LINBUF_SIZE 64 // Set to 64 for max single packet size
+#define USBTXQUEUE_LEN 1024 // Number of bytes allocated
+
+typedef struct usbtxbuf_
+{
+	uint8_t data[USBTXQUEUE_LEN]; // Data buffer
+	uint16_t head; // Head pointer
+	uint16_t tail; // Tail pointer
+} usbtx_buf_t;
 
 
 // Receive buffering: circular buffer FIFO
@@ -18,22 +28,11 @@ typedef struct _usbrx_buf_
 	// Receive buffering: circular buffer FIFO
 	uint8_t buf[NUM_RX_BUFS][RX_BUF_SIZE];
 	uint32_t msglen[NUM_RX_BUFS];
-	uint8_t head;
-	uint8_t tail;
+	uint16_t head;
+	uint16_t tail;
 
 } usbrx_buf_t;
 
-
-// Receive buffering: circular buffer FIFO
-typedef struct _usbtx_buf_
-{
-	// Receive buffering: circular buffer FIFO
-	uint8_t buf[NUM_TX_BUFS][TX_BUF_SIZE];
-	uint32_t msglen[NUM_TX_BUFS];
-	uint8_t head;
-	uint8_t tail;
-
-} usbtx_buf_t;
 
 /* Includes ------------------------------------------------------------------*/
 #include "usbd_cdc.h"

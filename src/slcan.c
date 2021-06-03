@@ -14,10 +14,10 @@ char* fw_id = GIT_VERSION " " GIT_REMOTE "\r";
 
 
 // Private methods
-static int8_t __hal_dlc_code_to_bytes(uint32_t dlc_code);
 static uint32_t __std_dlc_code_to_hal_dlc_code(uint8_t dlc_code);
 static uint8_t __hal_dlc_code_to_std_dlc_code(uint32_t hal_dlc_code);
 
+// FIXME: Pressing enter repeates the previous TX
 
 // Parse an incoming CAN frame into an outgoing slcan message
 int8_t slcan_parse_frame(uint8_t *buf, FDCAN_RxHeaderTypeDef *frame_header, uint8_t* frame_data)
@@ -82,10 +82,12 @@ int8_t slcan_parse_frame(uint8_t *buf, FDCAN_RxHeaderTypeDef *frame_header, uint
 
     // Add DLC to buffer
     buf[msg_idx++] = __hal_dlc_code_to_std_dlc_code(frame_header->DataLength);
-    int8_t bytes = __hal_dlc_code_to_bytes(frame_header->DataLength);
+    int8_t bytes = hal_dlc_code_to_bytes(frame_header->DataLength);
 
     // Check bytes value
     if(bytes < 0)
+    	return -1;
+    if(bytes > 64)
     	return -1;
 
     // Add data bytes
@@ -127,7 +129,7 @@ int8_t slcan_parse_str(uint8_t *buf, uint8_t len)
         .TxEventFifoControl = FDCAN_NO_TX_EVENTS, // don't record tx events
         .MessageMarker = 0, // ?
 	};
-    uint8_t frame_data[8] = {0};
+    uint8_t frame_data[64] = {0};
 
 
     // Convert from ASCII (2nd character to end)
@@ -206,6 +208,16 @@ int8_t slcan_parse_str(uint8_t *buf, uint8_t len)
 	        return 0;
 		}
 
+	    // FIXME: Nonstandard!
+		case 'E':
+		{
+	        // Report firmware version and remote
+			char errstr[64] = {0};
+			snprintf(errstr, 64, "CANable Error Register: %X", error_reg());
+			cdc_transmit((uint8_t*)errstr, strlen(errstr));
+	        return 0;
+		}
+
 		// Transmit data frame command
 		case 'T':
 	    	frame_header.IdType = FDCAN_EXTENDED_ID;
@@ -279,7 +291,6 @@ int8_t slcan_parse_str(uint8_t *buf, uint8_t len)
 		frame_header.Identifier += buf[parse_loc++];
 	}
 
-
     // Attempt to parse DLC and check sanity
     uint8_t dlc_code_raw = buf[parse_loc++];
 
@@ -297,9 +308,11 @@ int8_t slcan_parse_str(uint8_t *buf, uint8_t len)
     frame_header.DataLength = __std_dlc_code_to_hal_dlc_code(dlc_code_raw);
 
     // Calculate number of bytes we expect in the message
-    int8_t bytes_in_msg = __hal_dlc_code_to_bytes(frame_header.DataLength);
+    int8_t bytes_in_msg = hal_dlc_code_to_bytes(frame_header.DataLength);
 
     if(bytes_in_msg < 0)
+    	return -1;
+    if(bytes_in_msg > 64)
     	return -1;
 
     // Parse data
@@ -318,7 +331,7 @@ int8_t slcan_parse_str(uint8_t *buf, uint8_t len)
 
 
 // Convert a FDCAN_data_length_code to number of bytes in a message
-static int8_t __hal_dlc_code_to_bytes(uint32_t hal_dlc_code)
+int8_t hal_dlc_code_to_bytes(uint32_t hal_dlc_code)
 {
 	switch(hal_dlc_code)
 	{

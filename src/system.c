@@ -107,6 +107,19 @@ void system_init(void)
     __option_byte_config();
 }
 
+void system_irq_disable(void)
+{
+	__disable_irq();
+	__DSB();
+	__ISB();
+}
+
+void system_irq_enable(void)
+{
+	__enable_irq();
+}
+
+
 
 // Configure option bytes: set BoR level to 4 (2.8v)
 static void __option_byte_config(void)

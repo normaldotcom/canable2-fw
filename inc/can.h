@@ -23,14 +23,14 @@ enum can_bus_state {
 
 // CAN transmit buffering
 #define TXQUEUE_LEN 64 // Number of buffers allocated
-#define TXQUEUE_DATALEN 8 // CAN DLC length of data buffers
+#define TXQUEUE_DATALEN 64 // CAN DLC length of data buffers. Must be 64 for canfd.
 
 typedef struct cantxbuf_
 {
 	uint8_t data[TXQUEUE_LEN][TXQUEUE_DATALEN]; // Data buffer
 	FDCAN_TxHeaderTypeDef header[TXQUEUE_LEN]; // Header buffer
-	uint8_t head; // Head pointer
-	uint8_t tail; // Tail pointer
+	uint16_t head; // Head pointer
+	uint16_t tail; // Tail pointer
 	uint8_t full; // TODO: Set this when we are full, clear when the tail moves one.
 } can_txbuf_t;
 

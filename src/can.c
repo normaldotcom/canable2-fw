@@ -8,6 +8,7 @@
 #include "can.h"
 #include "led.h"
 #include "error.h"
+#include "system.h"
 
 
 // Private variables
@@ -81,7 +82,9 @@ void can_enable(void)
     if (bus_state == OFF_BUS)
     {
         can_handle.Init.ClockDivider = FDCAN_CLOCK_DIV1; // 144Mhz
-        can_handle.Init.FrameFormat = FDCAN_FRAME_CLASSIC;
+//        can_handle.Init.FrameFormat = FDCAN_FRAME_CLASSIC;
+        can_handle.Init.FrameFormat = FDCAN_FRAME_FD_BRS;
+
 
     	//can_handle.Init.Prescaler = prescaler;
     	can_handle.Init.Mode = FDCAN_MODE_NORMAL;
@@ -94,11 +97,11 @@ void can_enable(void)
     	can_handle.Init.NominalTimeSeg1 = 14;
     	can_handle.Init.NominalTimeSeg2 = 2;
         
-        // FD only??
-        can_handle.Init.DataPrescaler = 1;
+        // FD only
+        can_handle.Init.DataPrescaler = 2; // 5Mbit rate
         can_handle.Init.DataSyncJumpWidth = 1;
-        can_handle.Init.DataTimeSeg1 = 1;
-        can_handle.Init.DataTimeSeg2 = 1;
+        can_handle.Init.DataTimeSeg1 = 14;
+        can_handle.Init.DataTimeSeg2 = 2;
 
     	//can_handle.Init.TimeTriggeredMode = DISABLE;
     	//can_handle.Init.AutoBusOff = ENABLE;
@@ -223,7 +226,7 @@ void can_set_autoretransmit(uint8_t autoretransmit)
 
 
 
-// Send a message on the CAN bus
+// Send a message on the CAN bus. Called from USB ISR.
 uint32_t can_tx(FDCAN_TxHeaderTypeDef *tx_msg_header, uint8_t* tx_msg_data)
 {
 	// If when we increment the head we're going to hit the tail
@@ -231,19 +234,23 @@ uint32_t can_tx(FDCAN_TxHeaderTypeDef *tx_msg_header, uint8_t* tx_msg_data)
 	if( ((txqueue.head + 1) % TXQUEUE_LEN) == txqueue.tail)
 	{
 
-		for(uint8_t i=0; i<8; i++)
-		{
-			HAL_GPIO_TogglePin(LED_GREEN);
-			HAL_GPIO_TogglePin(LED_BLUE);
-			HAL_Delay(1000);
-		}
+//		for(uint8_t i=0; i<8; i++)
+//		{
+//			HAL_GPIO_TogglePin(LED_GREEN);
+//			HAL_GPIO_TogglePin(LED_BLUE);
+//			HAL_Delay(1000);
+//		}
 
 		error_assert(ERR_FULLBUF_CANTX);
 		return HAL_ERROR;
 	}
 
 	// Convert length to bytes
-	uint32_t len = tx_msg_header->DataLength >> 16;
+	uint32_t len = hal_dlc_code_to_bytes(tx_msg_header->DataLength);
+
+	// Don't overrun buffer element max length
+	if(len > TXQUEUE_DATALEN)
+		return HAL_ERROR;
 
 	// Save the header to the circular buffer
 	txqueue.header[txqueue.head] = *tx_msg_header;

@@ -24,7 +24,7 @@ int main(void)
 
     // Storage for status and received message buffer
     FDCAN_RxHeaderTypeDef rx_msg_header;
-    uint8_t rx_msg_data[8] = {0}; // FIXME upsize for FD
+    uint8_t rx_msg_data[64] = {0};
     uint8_t msg_buf[SLCAN_MTU];
 
 

@@ -1,11 +1,13 @@
 #include "usbd_cdc_if.h"
 #include "slcan.h"
+#include "system.h"
 #include "error.h"
 
 // Private variables
 static volatile usbrx_buf_t rxbuf = {0};
 static volatile usbtx_buf_t txbuf = {0};
-static uint8_t tx_linbuf[TX_BUF_SIZE] = {0};
+static uint8_t tx_linbuf[TX_LINBUF_SIZE] = {0};
+
 
 // Externs
 extern USBD_HandleTypeDef hUsbDeviceFS;
@@ -184,36 +186,37 @@ static int8_t CDC_Receive_FS(uint8_t* Buf, uint32_t *Len)
 
 
 
+
 uint8_t slcan_str[SLCAN_MTU];
 uint8_t slcan_str_index = 0;
 
 void cdc_process(void)
 {
-
 	// Process transmit buffer
     USBD_CDC_HandleTypeDef *hcdc = (USBD_CDC_HandleTypeDef*)hUsbDeviceFS.pClassData;
-    if(txbuf.tail != txbuf.head && hcdc->TxState == 0)
+    if(hcdc->TxState == 0)
     {
-    	// TODO: Just start TX of the actual data and increment the pointer when the TX is complete
+    	uint16_t linbuf_ctr = 0;
+    	while(txbuf.tail != txbuf.head)
+    	{
+    		tx_linbuf[linbuf_ctr++] = txbuf.data[txbuf.tail];
+    		txbuf.tail = (txbuf.tail + 1) % USBTXQUEUE_LEN;
 
-    	// Copy data from cirbuf position to the linear tx buf
-    	for(uint32_t i = 0; i < txbuf.msglen[txbuf.tail]; i++)
-		{
-    		tx_linbuf[i] = txbuf.buf[txbuf.tail][i];
-		}
+    		// Take up to the number of bytes to fill the linbuf
+    		if(linbuf_ctr >= TX_LINBUF_SIZE)
+    			break;
+    	}
 
-
-        // Set transmit buffer and start TX
-        USBD_CDC_SetTxBuffer(&hUsbDeviceFS, tx_linbuf, txbuf.msglen[txbuf.tail]);
-        USBD_CDC_TransmitPacket(&hUsbDeviceFS);
-
-		// Move on to next buffer
-		txbuf.tail = (txbuf.tail + 1) % NUM_TX_BUFS;
-
+    	if(linbuf_ctr > 0)
+    	{
+			// Set transmit buffer and start TX
+			USBD_CDC_SetTxBuffer(&hUsbDeviceFS, tx_linbuf, linbuf_ctr);
+			USBD_CDC_TransmitPacket(&hUsbDeviceFS);
+    	}
     }
 
-
 	// Process receive buffer
+    system_irq_disable();
 	if(rxbuf.tail != rxbuf.head)
 	{
 		//  Process one whole buffer
@@ -248,37 +251,39 @@ void cdc_process(void)
 		// Move on to next buffer
 		rxbuf.tail = (rxbuf.tail + 1) % NUM_RX_BUFS;
 	}
+    system_irq_enable();
+
 }
 
+
+
+
+
+// TODO: Have a big circular buffer of bytes and pull bytes
+// out of this buffer as we need them and copy them to a linear
+// buffer from which we transmit data
 
 // Enqueue data for transmission over USB CDC to host
 void cdc_transmit(uint8_t* buf, uint16_t len)
 {
-    if(len > TX_BUF_SIZE)
-    {
-    	return;
-    }
-
-	if( ((txbuf.head + 1) % NUM_TX_BUFS) == txbuf.tail)
+	system_irq_disable();
+	if( ((txbuf.head + len) % USBTXQUEUE_LEN) == txbuf.tail)
 	{
 		error_assert(ERR_FULLBUF_USBTX);
-		return;
-	}
+    	return;
+    }
 	else
 	{
-		// Save message length
-		txbuf.msglen[txbuf.head] = len;
-
 		// Copy data
 	    for (uint32_t i=0; i < len; i++)
 	    {
-	    	txbuf.buf[txbuf.head][i] = buf[i];
+	    	txbuf.data[txbuf.head] = buf[i];
+
+		    // Increment the head
+			txbuf.head = (txbuf.head + 1) % USBTXQUEUE_LEN;
 	    }
 
-	    // Increment the head
-		txbuf.head = (txbuf.head + 1) % NUM_TX_BUFS;
-
-
 	}
+    system_irq_enable();
 }
 
