@@ -19,6 +19,7 @@ typedef enum _error_t
 // Prototypes
 void error_assert(error_t err);
 uint32_t error_timestamp(error_t err);
+uint32_t error_last_timestamp(void);
 uint8_t error_occurred(error_t err);
 uint32_t error_reg(void);
 

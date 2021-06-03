@@ -11,7 +11,8 @@ static volatile uint32_t led_blue_laston = 0;
 static volatile uint32_t led_green_laston = 0;
 static uint32_t led_blue_lastoff = 0;
 static uint32_t led_green_lastoff = 0;
-
+static uint8_t error_blink_status = 0;
+static uint8_t error_was_indicating = 0;
 
 // Initialize LED GPIOs
 void led_init()
@@ -92,19 +93,28 @@ uint32_t last_errflash = 0;
 void led_process(void)
 {
 
-    if(error_reg() > 0)
+    // If error occurred in the last 2 seconds, override LEDs with blink sequence
+    if(error_last_timestamp() > 0 && (HAL_GetTick() - error_last_timestamp() < 2000))
     {
-    	if(HAL_GetTick() - last_errflash > 250)
+    	if(HAL_GetTick() - last_errflash > 150)
     	{
     		last_errflash = HAL_GetTick();
-			HAL_GPIO_TogglePin(LED_BLUE);
-			HAL_GPIO_TogglePin(LED_GREEN);
+			HAL_GPIO_WritePin(LED_BLUE, error_blink_status);
+			HAL_GPIO_WritePin(LED_GREEN, error_blink_status);
+            error_blink_status = !error_blink_status;
+            error_was_indicating = 1;
     	}
     }
+    // Otherwise, normal LED operation
     else
     {
-
-
+        // If we were blinking but no longer are blinking, turn the power LED back on.
+        if(error_was_indicating)
+        {
+            HAL_GPIO_WritePin(LED_GREEN, 1);
+            error_was_indicating = 0;
+        }
+        
 		// If LED has been on for long enough, turn it off
 		if(led_blue_laston > 0 && HAL_GetTick() - led_blue_laston > LED_DURATION)
 		{

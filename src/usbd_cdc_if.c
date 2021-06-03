@@ -200,7 +200,7 @@ void cdc_process(void)
     	while(txbuf.tail != txbuf.head)
     	{
     		tx_linbuf[linbuf_ctr++] = txbuf.data[txbuf.tail];
-    		txbuf.tail = (txbuf.tail + 1) % USBTXQUEUE_LEN;
+    		txbuf.tail = (txbuf.tail + 1UL) % USBTXQUEUE_LEN;
 
     		// Take up to the number of bytes to fill the linbuf
     		if(linbuf_ctr >= TX_LINBUF_SIZE)
@@ -280,7 +280,7 @@ void cdc_transmit(uint8_t* buf, uint16_t len)
 	    	txbuf.data[txbuf.head] = buf[i];
 
 		    // Increment the head
-			txbuf.head = (txbuf.head + 1) % USBTXQUEUE_LEN;
+			txbuf.head = (txbuf.head + 1UL) % USBTXQUEUE_LEN;
 	    }
 
 	}
