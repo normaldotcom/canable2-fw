@@ -179,10 +179,12 @@ int8_t slcan_parse_str(uint8_t *buf, uint8_t len)
 	    	if(buf[1] == 2)
 	    	{
                 // Set data bitrate to 2M preset
+                can_set_data_bitrate(CAN_DATA_BITRATE_2M);
 	    	}
             else if(buf[1] == 5)
             {
                 // Set data bitrate to 5M preset
+                can_set_data_bitrate(CAN_DATA_BITRATE_5M);
             }
             else
             {
