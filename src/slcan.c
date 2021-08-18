@@ -234,7 +234,7 @@ int8_t slcan_parse_str(uint8_t *buf, uint8_t len)
 	    // FIXME: Nonstandard!
 		case 'E':
 		{
-	        // Report firmware version and remote
+	        // Report error register
 			char errstr[64] = {0};
 			snprintf(errstr, 64, "CANable Error Register: %X", error_reg());
 			cdc_transmit((uint8_t*)errstr, strlen(errstr));
