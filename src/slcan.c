@@ -160,7 +160,7 @@ int8_t slcan_parse_str(uint8_t *buf, uint8_t len)
 	        can_disable();
 	        return 0;
 
-	    // Set bitrate
+	    // Set nominal bitrate
 		case 'S':
 
 	    	// Check for valid bitrate
@@ -171,6 +171,27 @@ int8_t slcan_parse_str(uint8_t *buf, uint8_t len)
 
 			can_set_bitrate(buf[1]);
 	        return 0;
+
+	    // Set data bitrate
+		case 'Y':
+
+	    	// Check for valid bitrate
+	    	if(buf[1] == 2)
+	    	{
+                // Set data bitrate to 2M preset
+	    	}
+            else if(buf[1] == 5)
+            {
+                // Set data bitrate to 5M preset
+            }
+            else
+            {
+                // Invalid bitrate
+                return -1;
+            }
+
+	        return 0;
+
 
 	    // FIXME: Nonstandard!
 		case 'M':
@@ -217,6 +238,7 @@ int8_t slcan_parse_str(uint8_t *buf, uint8_t len)
 			cdc_transmit((uint8_t*)errstr, strlen(errstr));
 	        return 0;
 		}
+        
 
 		// Transmit data frame command
 		case 'T':

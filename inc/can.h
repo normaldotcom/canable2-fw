@@ -16,6 +16,15 @@ enum can_bitrate {
 	CAN_BITRATE_INVALID,
 };
 
+
+enum can_data_bitrate {
+    CAN_DATA_BITRATE_2M = 2,
+    CAN_DATA_BITRATE_5M = 5,
+
+	CAN_DATA_BITRATE_INVALID,
+};
+
+
 enum can_bus_state {
     OFF_BUS,
     ON_BUS
@@ -39,6 +48,7 @@ void can_init(void);
 void can_enable(void);
 void can_disable(void);
 void can_set_bitrate(enum can_bitrate bitrate);
+void can_set_data_bitrate(enum can_data_bitrate bitrate);
 void can_set_silent(uint8_t silent);
 void can_set_autoretransmit(uint8_t autoretransmit);
 uint32_t can_tx(FDCAN_TxHeaderTypeDef *tx_msg_header, uint8_t *tx_msg_data);

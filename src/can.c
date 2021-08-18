@@ -15,6 +15,7 @@
 static FDCAN_HandleTypeDef can_handle;
 static FDCAN_FilterTypeDef filter;
 static uint32_t prescaler;
+static uint32_t data_prescaler;
 enum can_bus_state bus_state;
 static uint8_t can_autoretransmit = ENABLE;
 static can_txbuf_t txqueue = {0};
@@ -71,6 +72,7 @@ void can_init(void)
 
     // default to 125 kbit/s
     can_set_bitrate(CAN_BITRATE_125K);
+    can_set_data_bitrate(CAN_DATA_BITRATE_2M);
     can_handle.Instance = FDCAN1;
     bus_state = OFF_BUS;
 }
@@ -92,16 +94,20 @@ void can_enable(void)
         can_handle.Init.TransmitPause = DISABLE; // emz
         can_handle.Init.ProtocolException = DISABLE; // emz
 
-        can_handle.Init.NominalPrescaler = prescaler; // 144mhz base clock
+        can_handle.Init.NominalPrescaler = prescaler; // 170mhz base clock
     	can_handle.Init.NominalSyncJumpWidth = 1;
     	can_handle.Init.NominalTimeSeg1 = 14;
     	can_handle.Init.NominalTimeSeg2 = 2;
         
         // FD only
-        can_handle.Init.DataPrescaler = 2; // 5Mbit rate
+        can_handle.Init.DataPrescaler = data_prescaler; // 2 for 5Mbit rate with 170 base clock
         can_handle.Init.DataSyncJumpWidth = 1;
         can_handle.Init.DataTimeSeg1 = 14;
         can_handle.Init.DataTimeSeg2 = 2;
+        
+        // For other bitrates with prescaler changes:
+        // 2Mbits is same 14/2 with a prescalar of 5
+        // Probably would prefer to change the time quanta instead
 
     	//can_handle.Init.TimeTriggeredMode = DISABLE;
     	//can_handle.Init.AutoBusOff = ENABLE;
@@ -139,6 +145,28 @@ void can_disable(void)
     }
 }
 
+
+void can_set_data_bitrate(enum can_data_bitrate bitrate)
+{
+    if (bus_state == ON_BUS)
+    {
+        // cannot set bitrate while on bus
+        return;
+    }
+
+    switch (bitrate)
+    {
+        case CAN_DATA_BITRATE_2M:
+        	data_prescaler = 2;
+            break;
+        case CAN_DATA_BITRATE_5M:
+        	data_prescaler = 5;
+            break;
+    }
+
+    led_green_on();
+    
+}
 
 // Set the bitrate of the CAN peripheral
 void can_set_bitrate(enum can_bitrate bitrate)
