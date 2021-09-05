@@ -34,7 +34,7 @@ This repository contains sources for the slcan CANable 2.0 firmware. This firmwa
 - `E` - Returns error register
 
 Note: CANFD message lengths are as follows (expressed in hexadecimal):
-- `0-8': Same as standard CAN
+- `0-8`: Same as standard CAN
 - `9`: Length = 12
 - `A`: Length = 16
 - `B`: Length = 20
