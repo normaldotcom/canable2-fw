@@ -14,7 +14,9 @@ SOURCES = main.c system.c usbd_conf.c usbd_cdc_if.c usb_device.c usbd_desc.c int
 
 # Get git version and dirty flag
 GIT_VERSION := $(shell git describe --abbrev=7 --dirty --always --tags)
-GIT_REMOTE := $(shell git config --get remote.origin.url)
+
+# Get git remote URL. Use sed to strip off PAT (important!) and https:// 
+GIT_REMOTE := $(shell git config --get remote.origin.url | sed 's/^.*github/github/')
 
 # TARGET: name of the user application
 TARGET = canable2-$(GIT_VERSION)
