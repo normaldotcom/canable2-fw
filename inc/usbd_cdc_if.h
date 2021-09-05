@@ -9,11 +9,12 @@
 #define RX_BUF_SIZE CDC_DATA_FS_MAX_PACKET_SIZE // Size of RX buffer item
 
 
-
 // CDC transmit buffering
 #define TX_LINBUF_SIZE 64 // Set to 64 for max single packet size
 #define USBTXQUEUE_LEN 2048 // Number of bytes allocated
 
+
+// Transmit buffering: circular buffer FIFO
 typedef struct usbtxbuf_
 {
 	uint8_t data[USBTXQUEUE_LEN]; // Data buffer
@@ -34,10 +35,8 @@ typedef struct _usbrx_buf_
 } usbrx_buf_t;
 
 
-/* Includes ------------------------------------------------------------------*/
-#include "usbd_cdc.h"
-
 extern USBD_CDC_ItfTypeDef USBD_Interface_fops_FS;
+
 
 // Prototypes
 void cdc_transmit(uint8_t* buf, uint16_t len);

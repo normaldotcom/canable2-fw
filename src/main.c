@@ -1,5 +1,5 @@
 //
-// CANable Flex firmware
+// CANable2 firmware
 //
 
 #include "stm32g4xx.h"
@@ -19,7 +19,7 @@ int main(void)
     led_init();
     usb_init();
 
-    // Poweron blink sequence
+    // Power-on blink sequence
     led_blue_blink(2);
 
     // Storage for status and received message buffer
@@ -43,14 +43,12 @@ int main(void)
 				uint16_t msg_len = slcan_parse_frame((uint8_t *)&msg_buf, &rx_msg_header, rx_msg_data);
 
 				// Transmit message via USB-CDC
-				if(msg_len>0)
+				if(msg_len > 0)
 				{
 					cdc_transmit(msg_buf, msg_len);
 				}
 			}
         }
-
-
     }
 }
 

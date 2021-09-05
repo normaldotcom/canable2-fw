@@ -2,6 +2,7 @@
 #define INC_ERROR_H_
 
 
+// Error flags, value is bit position in the error register
 typedef enum _error_t
 {
 	ERR_PERIPHINIT = 0,

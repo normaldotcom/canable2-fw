@@ -13,7 +13,7 @@
 
 // Private variables
 static FDCAN_HandleTypeDef can_handle;
-static FDCAN_FilterTypeDef filter;
+//static FDCAN_FilterTypeDef filter;
 static uint32_t prescaler;
 static uint32_t data_prescaler;
 enum can_bus_state bus_state;
@@ -159,7 +159,9 @@ void can_set_data_bitrate(enum can_data_bitrate bitrate)
         case CAN_DATA_BITRATE_2M:
         	data_prescaler = 5;
             break;
+
         case CAN_DATA_BITRATE_5M:
+        default:
         	data_prescaler = 2;
             break;
     }
@@ -188,6 +190,9 @@ void can_set_bitrate(enum can_bitrate bitrate)
         case CAN_BITRATE_50K:
         	prescaler = 200;
             break;
+        case CAN_BITRATE_83_3K:
+        	prescaler = 120;
+        	break;
         case CAN_BITRATE_100K:
             prescaler = 100;
             break;
@@ -204,11 +209,9 @@ void can_set_bitrate(enum can_bitrate bitrate)
             prescaler = 7;// THIS IS VERY INACCURATE!!! FIXME
             break;
         case CAN_BITRATE_1000K:
+        default:
             prescaler = 10;
             break;
-        case CAN_BITRATE_83_3K:
-        	prescaler = 120;
-        	break;
     }
 
     led_green_on();
@@ -261,14 +264,6 @@ uint32_t can_tx(FDCAN_TxHeaderTypeDef *tx_msg_header, uint8_t* tx_msg_data)
 	// (if we're filling the last spot in the queue)
 	if( ((txqueue.head + 1) % TXQUEUE_LEN) == txqueue.tail)
 	{
-
-//		for(uint8_t i=0; i<8; i++)
-//		{
-//			HAL_GPIO_TogglePin(LED_GREEN);
-//			HAL_GPIO_TogglePin(LED_BLUE);
-//			HAL_Delay(1000);
-//		}
-
 		error_assert(ERR_FULLBUF_CANTX);
 		return HAL_ERROR;
 	}
@@ -311,12 +306,6 @@ void can_process(void)
 		// since we check if there is a TX mailbox free.
 		if(status != HAL_OK)
 		{
-			for(uint8_t i=0; i<8; i++)
-			{
-				HAL_GPIO_TogglePin(LED_GREEN);
-				HAL_GPIO_TogglePin(LED_BLUE);
-				HAL_Delay(1000);
-			}
 			error_assert(ERR_CAN_TXFAIL);
 		}
 

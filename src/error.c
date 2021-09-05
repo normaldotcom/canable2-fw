@@ -2,7 +2,6 @@
 // Error: handling / reporting of system errors
 //
 
-
 #include "stm32g4xx_hal.h"
 #include "error.h"
 
@@ -11,6 +10,7 @@
 static uint32_t err_reg = 0;
 static uint32_t err_time[ERR_MAX] = {0};
 static uint32_t err_last_time = 0;
+
 
 // Assert an error: sets err register bit and records timestamp
 void error_assert(error_t err)

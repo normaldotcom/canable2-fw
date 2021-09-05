@@ -18,7 +18,7 @@ char* fw_id = GIT_VERSION " " GIT_REMOTE "\r";
 static uint32_t __std_dlc_code_to_hal_dlc_code(uint8_t dlc_code);
 static uint8_t __hal_dlc_code_to_std_dlc_code(uint32_t hal_dlc_code);
 
-// FIXME: Pressing enter repeates the previous TX
+// FIXME: Pressing enter repeats the previous TX
 
 // Parse an incoming CAN frame into an outgoing slcan message
 int8_t slcan_parse_frame(uint8_t *buf, FDCAN_RxHeaderTypeDef *frame_header, uint8_t* frame_data)

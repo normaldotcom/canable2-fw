@@ -1,9 +1,10 @@
 //
-// system: initalize system clocks and other core peripherals
+// system: initialize system clocks and other core peripherals
 //
 
 #include "stm32g4xx_hal.h"
 #include "system.h"
+
 
 // Private functions
 static void __option_byte_config(void);
@@ -73,30 +74,6 @@ void system_init(void)
 
 	HAL_RCCEx_CRSConfig(&pInit);
 
-  /*
-    // Enable clock recovery system for internal oscillator
-    RCC_CRSInitTypeDef RCC_CRSInitStruct;
-    __HAL_RCC_CRS_CLK_ENABLE();
-
-    // Default Synchro Signal division factor (not divided)
-    RCC_CRSInitStruct.Prescaler = RCC_CRS_SYNC_DIV1;
-
-    // Set the SYNCSRC[1:0] bits according to CRS_Source value
-    RCC_CRSInitStruct.Source = RCC_CRS_SYNC_SOURCE_USB;
-
-    // Rising polarity
-    RCC_CRSInitStruct.Polarity = RCC_CRS_SYNC_POLARITY_RISING;
-
-    // HSI48 is synchronized with USB SOF at 1KHz rate
-    RCC_CRSInitStruct.ReloadValue = __HAL_RCC_CRS_RELOADVALUE_CALCULATE(48000000, 1000);
-    RCC_CRSInitStruct.ErrorLimitValue = RCC_CRS_ERRORLIMIT_DEFAULT;
-
-    // Set the TRIM[5:0] to the default value
-    RCC_CRSInitStruct.HSI48CalibrationValue = 32;
-
-    // Start automatic synchronization
-    HAL_RCCEx_CRSConfig(&RCC_CRSInitStruct);
-	*/
     HAL_NVIC_SetPriority(SysTick_IRQn, 0, 0);
     __HAL_RCC_GPIOF_CLK_ENABLE();
     __HAL_RCC_GPIOA_CLK_ENABLE();
@@ -107,6 +84,8 @@ void system_init(void)
     __option_byte_config();
 }
 
+
+// Disable all interrupts
 void system_irq_disable(void)
 {
 	__disable_irq();
@@ -114,11 +93,12 @@ void system_irq_disable(void)
 	__ISB();
 }
 
+
+// Enable all interrupts
 void system_irq_enable(void)
 {
 	__enable_irq();
 }
-
 
 
 // Configure option bytes: set BoR level to 4 (2.8v)
@@ -131,7 +111,7 @@ static void __option_byte_config(void)
 	// would enter boot mode incorrectly.
 
 	// Get option bytes
-	volatile FLASH_OBProgramInitTypeDef config = {0};
+	FLASH_OBProgramInitTypeDef config = {0};
 	HAL_FLASHEx_OBGetConfig(&config);
 
 	// If BoR is already at level 4, then don't bother doing anything

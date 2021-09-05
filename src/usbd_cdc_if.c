@@ -4,9 +4,11 @@
 #include "error.h"
 
 // Private variables
-static volatile usbrx_buf_t rxbuf = {0};
-static volatile usbtx_buf_t txbuf = {0};
+static usbrx_buf_t rxbuf = {0};
+static usbtx_buf_t txbuf = {0};
 static uint8_t tx_linbuf[TX_LINBUF_SIZE] = {0};
+static uint8_t slcan_str[SLCAN_MTU];
+static uint8_t slcan_str_index = 0;
 
 
 // Externs
@@ -29,11 +31,8 @@ USBD_CDC_ItfTypeDef USBD_Interface_fops_FS =
   CDC_Receive_FS
 };
 
-/* Private functions ---------------------------------------------------------*/
-/**
-  * @brief  Initializes the CDC media low layer over the FS USB IP
-  * @retval USBD_OK if all operations are OK else USBD_FAIL
-  */
+
+// Initializes the CDC media low layer over the FS USB IP
 static int8_t CDC_Init_FS(void)
 {
 	rxbuf.head = 0;
@@ -41,23 +40,16 @@ static int8_t CDC_Init_FS(void)
 	txbuf.head = 0;
 	txbuf.tail = 0;
 
-  /* USER CODE BEGIN 3 */
-  /* Set Application Buffers */
-  USBD_CDC_SetTxBuffer(&hUsbDeviceFS, tx_linbuf, 0);
-  USBD_CDC_SetRxBuffer(&hUsbDeviceFS, rxbuf.buf[rxbuf.head]);
-  return (USBD_OK);
-  /* USER CODE END 3 */
+	USBD_CDC_SetTxBuffer(&hUsbDeviceFS, tx_linbuf, 0);
+	USBD_CDC_SetRxBuffer(&hUsbDeviceFS, rxbuf.buf[rxbuf.head]);
+	return (USBD_OK);
 }
 
-/**
-  * @brief  DeInitializes the CDC media low layer
-  * @retval USBD_OK if all operations are OK else USBD_FAIL
-  */
+
+// DeInitializes the CDC media low layer
 static int8_t CDC_DeInit_FS(void)
 {
-  /* USER CODE BEGIN 4 */
-  return (USBD_OK);
-  /* USER CODE END 4 */
+	return (USBD_OK);
 }
 
 /**
@@ -185,11 +177,7 @@ static int8_t CDC_Receive_FS(uint8_t* Buf, uint32_t *Len)
 }
 
 
-
-
-uint8_t slcan_str[SLCAN_MTU];
-uint8_t slcan_str_index = 0;
-
+// Process incoming and outgoing USB-CDC data
 void cdc_process(void)
 {
 	// Process transmit buffer
@@ -224,7 +212,8 @@ void cdc_process(void)
 		{
 		   if (rxbuf.buf[rxbuf.tail][i] == '\r')
 		   {
-			   int8_t result = slcan_parse_str(slcan_str, slcan_str_index);
+			   //int8_t result =
+			   slcan_parse_str(slcan_str, slcan_str_index);
 
 			   // Success
 			   //if(result == 0)
@@ -255,13 +244,6 @@ void cdc_process(void)
 
 }
 
-
-
-
-
-// TODO: Have a big circular buffer of bytes and pull bytes
-// out of this buffer as we need them and copy them to a linear
-// buffer from which we transmit data
 
 // Enqueue data for transmission over USB CDC to host
 void cdc_transmit(uint8_t* buf, uint16_t len)

@@ -1,10 +1,11 @@
 //
-// LED: Handles blinking of status light
+// LED: Handles blinking of status lights
 //
 
 #include "stm32g4xx_hal.h"
 #include "led.h"
 #include "error.h"
+
 
 // Private variables
 static volatile uint32_t led_blue_laston = 0;
@@ -13,6 +14,8 @@ static uint32_t led_blue_lastoff = 0;
 static uint32_t led_green_lastoff = 0;
 static uint8_t error_blink_status = 0;
 static uint8_t error_was_indicating = 0;
+static uint32_t last_errflash = 0;
+
 
 // Initialize LED GPIOs
 void led_init()
@@ -87,7 +90,6 @@ void led_blue_on(void)
 	}
 }
 
-uint32_t last_errflash = 0;
 
 // Process time-based LED events
 void led_process(void)
