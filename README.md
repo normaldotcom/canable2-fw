@@ -33,6 +33,16 @@ This repository contains sources for the slcan CANable 2.0 firmware. This firmwa
 - `V` - Returns firmware version and remote path as a string
 - `E` - Returns error register
 
+Note: CANFD message lengths are as follows (expressed in hexadecimal):
+- `0-8': Same as standard CAN
+- `9`: Length = 12
+- `A`: Length = 16
+- `B`: Length = 20
+- `C`: Length = 24
+- `D`: Length = 32
+- `E`: Length = 48
+- `F`: Length = 64
+
 Note: Channel configuration commands must be sent before opening the channel. The channel must be opened before transmitting frames.
 
 This firmware currently does not provide any ACK/NACK feedback for serial commands.
