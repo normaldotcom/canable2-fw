@@ -5,6 +5,7 @@
 #include "stm32g4xx_hal.h"
 #include <string.h>
 #include "can.h"
+#include "error.h"
 #include "slcan.h"
 #include "usbd_cdc_if.h"
 
@@ -236,7 +237,7 @@ int8_t slcan_parse_str(uint8_t *buf, uint8_t len)
 		{
 	        // Report error register
 			char errstr[64] = {0};
-			snprintf(errstr, 64, "CANable Error Register: %X", error_reg());
+			snprintf(errstr, 64, "CANable Error Register: %X", (unsigned int)error_reg());
 			cdc_transmit((uint8_t*)errstr, strlen(errstr));
 	        return 0;
 		}
