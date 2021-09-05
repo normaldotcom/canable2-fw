@@ -1,6 +1,6 @@
 # CANable 2.0 Firmware
 
-This repository contains sources for the slcan CANable 2.0 firmware. This firmware implements non-standard slcan commands to support CANFD messaging.
+This repository contains sources for the slcan CANable 2.0 firmware. This firmware implements non-standard slcan commands to support CANFD messaging alongside a LAWICEL-style command set.
 
 ## Supported Commands
 
@@ -59,7 +59,7 @@ Your Linux distribution may also have a prebuilt package for `arm-none-eabi-gcc`
 
 ## Flashing with the Bootloader
 
-Plug in your CANable with the BOOT jumper enabled (or depress the boot button on the CANable Pro while plugging in). Next, type `make flash` and your CANable will be updated to the latest firwmare. Unplug/replug the device after moving the boot jumper back, and your CANable will be up and running.
+Plug in your CANable2 while pressing down the BOOT button. The blue LED should be dimly illuminated. Next, type `make flash` and your CANable will be updated to the latest firwmare. Unplug/replug the device after moving the boot jumper back, and your CANable will be up and running.
 
 
 ## License
