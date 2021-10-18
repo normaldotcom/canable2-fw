@@ -21,7 +21,7 @@ static uint8_t __hal_dlc_code_to_std_dlc_code(uint32_t hal_dlc_code);
 // FIXME: Pressing enter repeats the previous TX
 
 // Parse an incoming CAN frame into an outgoing slcan message
-int8_t slcan_parse_frame(uint8_t *buf, FDCAN_RxHeaderTypeDef *frame_header, uint8_t* frame_data)
+int32_t slcan_parse_frame(uint8_t *buf, FDCAN_RxHeaderTypeDef *frame_header, uint8_t* frame_data)
 {
     // Clear buffer
     for (uint8_t j=0; j < SLCAN_MTU; j++)
@@ -117,7 +117,7 @@ int8_t slcan_parse_frame(uint8_t *buf, FDCAN_RxHeaderTypeDef *frame_header, uint
 
 
 // Parse an incoming slcan command from the USB CDC port
-int8_t slcan_parse_str(uint8_t *buf, uint8_t len)
+int32_t slcan_parse_str(uint8_t *buf, uint8_t len)
 {
 	// Set default header. All values overridden below as needed.
 	FDCAN_TxHeaderTypeDef frame_header =
@@ -237,7 +237,7 @@ int8_t slcan_parse_str(uint8_t *buf, uint8_t len)
 		{
 	        // Report error register
 			char errstr[64] = {0};
-			snprintf(errstr, 64, "CANable Error Register: %X", (unsigned int)error_reg());
+			snprintf_(errstr, 64, "CANable Error Register: %X", (unsigned int)error_reg());
 			cdc_transmit((uint8_t*)errstr, strlen(errstr));
 	        return 0;
 		}

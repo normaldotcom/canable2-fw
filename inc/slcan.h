@@ -9,8 +9,8 @@
 
 
 // Prototypes
-int8_t slcan_parse_frame(uint8_t *buf, FDCAN_RxHeaderTypeDef *frame_header, uint8_t* frame_data);
-int8_t slcan_parse_str(uint8_t *buf, uint8_t len);
+int32_t slcan_parse_frame(uint8_t *buf, FDCAN_RxHeaderTypeDef *frame_header, uint8_t* frame_data);
+int32_t slcan_parse_str(uint8_t *buf, uint8_t len);
 
 // TODO: move to helper c file
 int8_t hal_dlc_code_to_bytes(uint32_t hal_dlc_code);

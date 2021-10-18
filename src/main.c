@@ -3,6 +3,7 @@
 //
 
 #include "stm32g4xx.h"
+#include "printf.h"
 #include "usb_device.h"
 #include "usbd_cdc_if.h"
 #include "can.h"
@@ -40,7 +41,7 @@ int main(void)
 			// If message received from bus, parse the frame
 			if (can_rx(&rx_msg_header, rx_msg_data) == HAL_OK)
 			{
-				uint16_t msg_len = slcan_parse_frame((uint8_t *)&msg_buf, &rx_msg_header, rx_msg_data);
+				int32_t msg_len = slcan_parse_frame((uint8_t *)&msg_buf, &rx_msg_header, rx_msg_data);
 
 				// Transmit message via USB-CDC
 				if(msg_len > 0)
