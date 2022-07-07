@@ -34,6 +34,8 @@ int main(void)
         led_process();
         can_process();
         cdc_process();
+        
+        
 
         // Message has been received, pull it from the buffer
         if(is_can_msg_pending(FDCAN_RX_FIFO0))
