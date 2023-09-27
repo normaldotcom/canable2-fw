@@ -108,7 +108,7 @@ void can_enable(void)
         can_handle.Init.NominalTimeSeg2 = bitrate_nominal.time_seg2;
         
         // FD only
-        can_handle.Init.DataPrescaler = bitrate_data.prescaler; // 2 for 5Mbit rate with 160 base clock
+        can_handle.Init.DataPrescaler = bitrate_data.prescaler;
         can_handle.Init.DataSyncJumpWidth = bitrate_data.sjw;
         can_handle.Init.DataTimeSeg1 = bitrate_data.time_seg1;
         can_handle.Init.DataTimeSeg2 = bitrate_data.time_seg2;
@@ -176,7 +176,7 @@ void can_set_data_bitrate(enum can_data_bitrate bitrate)
             break;
         case CAN_DATA_BITRATE_4M:
             bitrate_data.prescaler = 1;
-            bitrate_data.sjw = 1;
+            bitrate_data.sjw = 8;
             bitrate_data.time_seg1 = 30;
             bitrate_data.time_seg2 = 9;
             break;
