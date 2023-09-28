@@ -48,8 +48,6 @@ Note: CANFD message lengths are as follows (expressed in hexadecimal):
 
 Note: Channel configuration commands must be sent before opening the channel. The channel must be opened before transmitting frames.
 
-This firmware currently does not provide any ACK/NACK feedback for serial commands.
-
 ## Building
 
 Firmware builds with GCC. Specifically, you will need gcc-arm-none-eabi, which
