@@ -10,6 +10,10 @@
 #include "usbd_cdc_if.h"
 
 
+#define SLCAN_RET_OK    (uint8_t *)"\x0D"
+#define SLCAN_RET_ERR   (uint8_t *)"\x07"
+#define SLCAN_RET_LEN   1
+
 // Private variables
 char* fw_id = GIT_VERSION " " GIT_REMOTE "\r";
 
@@ -154,11 +158,13 @@ int32_t slcan_parse_str(uint8_t *buf, uint8_t len)
         // Open channel
         case 'O':
             can_enable();
+            cdc_transmit(SLCAN_RET_OK, SLCAN_RET_LEN);
             return 0;
 
         // Close channel
         case 'C':
             can_disable();
+            cdc_transmit(SLCAN_RET_OK, SLCAN_RET_LEN);
             return 0;
 
         // Set nominal bitrate
@@ -167,10 +173,12 @@ int32_t slcan_parse_str(uint8_t *buf, uint8_t len)
             // Check for valid bitrate
             if(buf[1] >= CAN_BITRATE_INVALID)
             {
+                cdc_transmit(SLCAN_RET_ERR, SLCAN_RET_LEN);
                 return -1;
             }
 
             can_set_bitrate(buf[1]);
+            cdc_transmit(SLCAN_RET_OK, SLCAN_RET_LEN);
             return 0;
 
         // Set data bitrate
@@ -183,9 +191,11 @@ int32_t slcan_parse_str(uint8_t *buf, uint8_t len)
                 case CAN_DATA_BITRATE_4M:
                 case CAN_DATA_BITRATE_5M:
                     can_set_data_bitrate(buf[1]);
+                    cdc_transmit(SLCAN_RET_OK, SLCAN_RET_LEN);
                     return 0;
                 default:
                     // Invalid bitrate
+                    cdc_transmit(SLCAN_RET_ERR, SLCAN_RET_LEN);
                     return -1;
             }
 
@@ -200,6 +210,7 @@ int32_t slcan_parse_str(uint8_t *buf, uint8_t len)
                 // Default to normal mode
                 can_set_silent(0);
             }
+            cdc_transmit(SLCAN_RET_OK, SLCAN_RET_LEN);
             return 0;
 
 
@@ -214,6 +225,7 @@ int32_t slcan_parse_str(uint8_t *buf, uint8_t len)
                 // Mode 0: autoretry disabled
                 can_set_autoretransmit(DISABLE);
             }
+            cdc_transmit(SLCAN_RET_OK, SLCAN_RET_LEN);
             return 0;
 
 
@@ -286,6 +298,7 @@ int32_t slcan_parse_str(uint8_t *buf, uint8_t len)
 
         // Invalid command
         default:
+            cdc_transmit(SLCAN_RET_ERR, SLCAN_RET_LEN);
             return -1;
     }
 
@@ -315,10 +328,12 @@ int32_t slcan_parse_str(uint8_t *buf, uint8_t len)
     // If dlc is too long for an FD frame
     if(frame_header.FDFormat == FDCAN_FD_CAN && dlc_code_raw > 0xF)
     {
+        cdc_transmit(SLCAN_RET_ERR, SLCAN_RET_LEN);
         return -1;
     }
     if(frame_header.FDFormat == FDCAN_CLASSIC_CAN && dlc_code_raw > 0x8)
     {
+        cdc_transmit(SLCAN_RET_ERR, SLCAN_RET_LEN);
         return -1;
     }
 
@@ -328,10 +343,10 @@ int32_t slcan_parse_str(uint8_t *buf, uint8_t len)
     // Calculate number of bytes we expect in the message
     int8_t bytes_in_msg = hal_dlc_code_to_bytes(frame_header.DataLength);
 
-    if(bytes_in_msg < 0)
+    if ((bytes_in_msg < 0) || (bytes_in_msg > 64)) {
+        cdc_transmit(SLCAN_RET_ERR, SLCAN_RET_LEN);
         return -1;
-    if(bytes_in_msg > 64)
-        return -1;
+    }
 
     // Parse data
     // TODO: Guard against walking off the end of the string!
@@ -344,6 +359,7 @@ int32_t slcan_parse_str(uint8_t *buf, uint8_t len)
     // Transmit the message
     can_tx(&frame_header, frame_data);
 
+    cdc_transmit(SLCAN_RET_OK, SLCAN_RET_LEN);
     return 0;
 }
 
