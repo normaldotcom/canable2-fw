@@ -26,10 +26,10 @@ This repository contains sources for the slcan CANable 2.0 firmware. This firmwa
 - `TIIIIIIIILDD...` - Transmit data frame (Extended ID) [ID, length, data]
 - `RIIIIIIIIL` - Transmit remote frame (Extended ID) [ID, length]
 - `rIIIL` - Transmit remote frame (Standard ID) [ID, length]
-- `dIIILDD...` - Transmit CAN FD standard ID (no BRS) [ID, length]
-- `DIIIIIIIILDD...` - Transmit CAN FD extended ID (no BRS) [ID, length]
-- `bIIILDD...` - Transmit CAN FD BRS standard ID [ID, length]
-- `BIIIIIIIILDD...` - Transmit CAN FD extended ID [ID, length]
+- `dIIILDD...` - Transmit CAN FD standard ID (no BRS) [ID, length, data]
+- `DIIIIIIIILDD...` - Transmit CAN FD extended ID (no BRS) [ID, length, data]
+- `bIIILDD...` - Transmit CAN FD BRS standard ID [ID, length, data]
+- `BIIIIIIIILDD...` - Transmit CAN FD extended ID [ID, length, data]
 
 - `V` - Returns firmware version and remote path as a string
 - `E` - Returns error register

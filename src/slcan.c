@@ -18,7 +18,6 @@ char* fw_id = GIT_VERSION " " GIT_REMOTE "\r";
 static uint32_t __std_dlc_code_to_hal_dlc_code(uint8_t dlc_code);
 static uint8_t __hal_dlc_code_to_std_dlc_code(uint32_t hal_dlc_code);
 
-// FIXME: Pressing enter repeats the previous TX
 
 // Parse an incoming CAN frame into an outgoing slcan message
 int32_t slcan_parse_frame(uint8_t *buf, FDCAN_RxHeaderTypeDef *frame_header, uint8_t* frame_data)
@@ -132,6 +131,11 @@ int32_t slcan_parse_str(uint8_t *buf, uint8_t len)
 	};
     uint8_t frame_data[64] = {0};
 
+    // Ignore a blank command
+    if (len == 0)
+    {
+        return 0;
+    }
 
     // Convert from ASCII (2nd character to end)
     for (uint8_t i = 1; i < len; i++)
